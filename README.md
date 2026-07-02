@@ -1,17 +1,17 @@
 # Win11Debloat + Setup
 
-A fork of [Raphire/Win11Debloat](https://github.com/Raphire/Win11Debloat) that turns a fresh Windows 11 install into a working machine in one pass. You get everything the original does — pre-installed junk removed, telemetry cut down, the UI stripped of the noisy bits — and then a short interactive setup that finishes the job the way most people actually want it configured.
+A fork of [Raphire/Win11Debloat](https://github.com/Raphire/Win11Debloat) that turns a fresh Windows 11 install into a working machine in one pass. You get everything the original does — pre-installed junk removed, telemetry cut down, the UI stripped of the noisy bits — plus a handful of extra setup tweaks, all in the **same interface** as the rest of the app.
 
-**What this fork adds on top:**
+**What this fork adds on top** — a **Custom Setup** category in the tweaks list, alongside the original's Privacy, Taskbar, File Explorer, etc.:
 
-- **Static IP configuration** — pick an adapter, punch in the IP / subnet mask / gateway / DNS. Defaults come from your current config, and you can skip any prompt to leave the network untouched.
-- **Remote Desktop toggle** — one Y/N to enable RDP and open the firewall, or lock it back down.
-- **Notification silence** — kills the toast/pop-up spam from Outlook (new *and* classic), Edge, Brave, and Chrome, so you don't spend your first day dismissing bubbles.
-- **Edge, tamed** — skips the first-run setup wizard, turns off diagnostic data and tracking out of the box, sets google.com as the homepage and new tab page, and kills the MSN feed, Rewards, shopping assistant, and sidebar.
-- **Brave install** — one Y/N to pull down the Brave browser via winget.
-- **Black desktop** — clears the wallpaper and sets a solid black background, applied instantly.
+- **Enable Remote Desktop (RDP)** — a checkbox that turns RDP on with Network Level Authentication and opens the firewall rules (unchecking reverses it).
+- **Silence notifications** — kills the toast/pop-up spam from Outlook (new *and* classic), Edge, Brave, and Chrome, so you don't spend your first day dismissing bubbles.
+- **Tame Edge** — skips the first-run setup wizard, turns off diagnostic data and tracking out of the box, sets google.com as the homepage and new tab page, and kills the MSN feed, Rewards, shopping assistant, and sidebar.
+- **Install Brave** — a checkbox that pulls down the Brave browser via winget.
+- **Solid black desktop** — clears the wallpaper and sets a solid black background, applied instantly.
+- **Configure static IP** — a button in the Custom Setup card opens a themed dialog to set the IP / subnet mask / gateway / DNS on an adapter, pre-filled from its current config.
 
-Everything is optional and prompted, so nothing changes without your say-so.
+These behave exactly like the built-in tweaks: tick what you want, review the pending changes, and hit Apply. Registry-backed ones (RDP, notifications, Edge) even show their current state and can be undone. Everything works from the command line too — `-EnableRDP`, `-DisableAppNotifications`, `-SetEdgePolicies`, `-InstallBrave`, `-SetBlackDesktop`.
 
 ### One-line install
 
@@ -21,9 +21,9 @@ Open PowerShell **as Administrator** on the fresh machine and paste:
 & ([scriptblock]::Create((irm "https://raw.githubusercontent.com/nievelc/Win11Debloat/main/Bootstrap.ps1")))
 ```
 
-That fetches this fork, unblocks the scripts, and launches `Win11Debloat.ps1`. The base debloater runs first; the extra setup prompts run at the end. Pass `-SkipCustomSetup` to skip the extras, or `-Silent` / `-Sysprep` to run unattended.
+That fetches this fork, unblocks the scripts, and launches `Win11Debloat.ps1`. The extra tweaks show up in the **Custom Setup** category in the GUI. Pass `-Silent` / `-Sysprep` to run unattended.
 
-The extra logic lives in `Scripts/Custom/CustomSetup.ps1` if you want to poke at it.
+The extra tweaks are defined in `Config/Features.json` (Custom Setup category) with their registry files in `Regfiles/`; the winget/desktop/static-IP logic lives in `Scripts/Features/InvokeChanges.ps1` and `Scripts/GUI/Show-StaticIPDialog.ps1`.
 
 ### Fully unattended install media (lab use)
 

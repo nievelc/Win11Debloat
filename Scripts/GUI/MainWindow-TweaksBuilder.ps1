@@ -354,6 +354,36 @@ function Build-DynamicTweaks {
         }
     }
 
+    # Fork addition: add a "Configure static IP..." button to the Custom Setup
+    # card. Static IP needs text input, which the checkbox/combo model can't
+    # express, so it opens a dedicated themed dialog and applies immediately
+    # rather than participating in the batched Apply flow.
+    if ($script:CategoryCardMap.ContainsKey('Custom Setup')) {
+        $customPanel = $script:CategoryCardMap['Custom Setup']
+
+        $ipButton = New-Object System.Windows.Controls.Button
+        $ipButton.Content = 'Configure static IP...'
+        $ipButton.HorizontalAlignment = 'Left'
+        $ipButton.Margin = '0,10,0,4'
+        try { $ipButton.Style = $Window.Resources['SecondaryButtonStyle'] } catch { }
+
+        $ipTip = New-Object System.Windows.Controls.TextBlock
+        $ipTip.Text = "Set a static IPv4 address, subnet mask, gateway and DNS on a network adapter. Opens a separate dialog and applies immediately when you click Apply - it is not part of the batched changes below."
+        $ipTip.TextWrapping = 'Wrap'
+        $ipTip.MaxWidth = 420
+        $ipButton.ToolTip = $ipTip
+
+        # Owner defaults to $script:GuiWindow inside the dialog; don't capture the
+        # function-local $Window here as it won't survive past this function
+        $ipButton.Add_Click({
+                if (Get-Command Show-StaticIPDialog -ErrorAction SilentlyContinue) {
+                    Show-StaticIPDialog
+                }
+            })
+
+        $customPanel.Children.Add($ipButton) | Out-Null
+    }
+
     # Build a feature-label lookup so GenerateOverview can resolve feature IDs without reloading JSON
     $script:FeatureLabelLookup = @{}
     $script:UndoFeatureLabelLookup = @{}

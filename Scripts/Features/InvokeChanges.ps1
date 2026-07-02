@@ -37,6 +37,12 @@ function Invoke-FeatureApply {
                 # Also disable telemetry scheduled tasks
                 Disable-TelemetryScheduledTasks
             }
+            'EnableRDP' {
+                # Also open the Remote Desktop firewall rules (language-neutral group id)
+                if (-not $script:Params.ContainsKey("WhatIf")) {
+                    Enable-NetFirewallRule -Group '@FirewallAPI.dll,-28752' -ErrorAction SilentlyContinue
+                }
+            }
         }
         return
     }
@@ -134,7 +140,91 @@ function Invoke-FeatureApply {
             Write-Host ""
             return
         }
+        'InstallBrave' {
+            Write-Host "> $applyText..."
+
+            if ($script:Params.ContainsKey("WhatIf")) {
+                Write-Host "[WhatIf] Install Brave via winget" -ForegroundColor Cyan
+                Write-Host ""
+                return
+            }
+
+            if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+                Write-Host "winget is not available on this system, unable to install Brave. Install 'App Installer' from the Microsoft Store and try again." -ForegroundColor Yellow
+                Write-Host ""
+                return
+            }
+
+            if (Test-BraveInstalled) {
+                Write-Host "Brave is already installed, skipping"
+                Write-Host ""
+                return
+            }
+
+            & winget install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements | Out-Host
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "winget exited with code $LASTEXITCODE - Brave may not have installed correctly" -ForegroundColor Yellow
+            }
+            Write-Host ""
+            return
+        }
+        'SetBlackDesktop' {
+            Write-Host "> $applyText..."
+
+            if ($script:Params.ContainsKey("WhatIf")) {
+                Write-Host "[WhatIf] Set solid black desktop background" -ForegroundColor Cyan
+                Write-Host ""
+                return
+            }
+
+            # Solid colour = "0 0 0" (space-separated RGB), no wallpaper image
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Colors'  -Name 'Background'     -Value '0 0 0' -Force
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WallPaper'      -Value ''      -Force
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WallpaperStyle' -Value '0'     -Force
+            Set-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'TileWallpaper'  -Value '0'     -Force
+
+            # Apply immediately without logoff. Dynamic compilation can be blocked
+            # by app-control policies, so failure here is non-fatal - the registry
+            # values above still take effect at the next logon.
+            try {
+                if (-not ('Win32.SPI' -as [Type])) {
+                    Add-Type -Namespace Win32 -Name SPI -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("user32.dll", CharSet=System.Runtime.InteropServices.CharSet.Auto, SetLastError=true)]
+public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+[System.Runtime.InteropServices.DllImport("user32.dll")]
+public static extern bool SetSysColors(int cElements, int[] lpaElements, int[] lpaRgbValues);
+'@
+                }
+                # SPI_SETDESKWALLPAPER = 20; SPIF_UPDATEINIFILE | SPIF_SENDCHANGE = 0x03
+                [Win32.SPI]::SystemParametersInfo(20, 0, '', 3) | Out-Null
+                # Force COLOR_BACKGROUND (index 1) to black
+                [Win32.SPI]::SetSysColors(1, @(1), @(0)) | Out-Null
+            }
+            catch {
+                Write-Host "Background is set but will only show after the next sign-in" -ForegroundColor Yellow
+            }
+            Write-Host ""
+            return
+        }
     }
+}
+
+
+<#
+    .SYNOPSIS
+        Returns $true when the Brave browser is installed (machine or per-user).
+#>
+function Test-BraveInstalled {
+    $indicators = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BraveSoftware Brave-Browser',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\BraveSoftware Brave-Browser',
+        (Join-Path $env:ProgramFiles 'BraveSoftware\Brave-Browser\Application\brave.exe'),
+        (Join-Path $env:LOCALAPPDATA 'BraveSoftware\Brave-Browser\Application\brave.exe')
+    )
+    foreach ($path in $indicators) {
+        if (Test-Path $path) { return $true }
+    }
+    return $false
 }
 
 
@@ -188,6 +278,13 @@ function Invoke-FeatureUndo {
         'DisableTelemetry' {
             # Also re-enable telemetry scheduled tasks
             Enable-TelemetryScheduledTasks
+            return
+        }
+        'EnableRDP' {
+            # Also close the Remote Desktop firewall rules (language-neutral group id)
+            if (-not $script:Params.ContainsKey("WhatIf")) {
+                Disable-NetFirewallRule -Group '@FirewallAPI.dll,-28752' -ErrorAction SilentlyContinue
+            }
             return
         }
     }

@@ -48,6 +48,10 @@
     {
       "Name": "Other",
       "Icon": "&#xE713;"
+    },
+    {
+      "Name": "Custom Setup",
+      "Icon": "&#xE90F;"
     }
   ],
   "UiGroups": [
@@ -1596,6 +1600,73 @@
       "ApplyUndoText": "Setting All Apps view to Category",
       "RegistryUndoKey": "Start_AllApps_Category.reg",
       "MinVersion": 26200,
+      "MaxVersion": null
+    },
+    {
+      "FeatureId": "EnableRDP",
+      "Label": "Enable Remote Desktop (RDP)",
+      "ToolTip": "Enables incoming Remote Desktop connections with Network Level Authentication and opens the Remote Desktop firewall rules, so you can connect to this machine remotely. Unchecking disables RDP and closes the firewall rules again.",
+      "Category": "Custom Setup",
+      "RegistryKey": "Enable_RDP.reg",
+      "ApplyText": "Enabling Remote Desktop and opening firewall rules",
+      "UndoLabel": "Disable Remote Desktop (RDP)",
+      "ApplyUndoText": "Disabling Remote Desktop and closing firewall rules",
+      "RegistryUndoKey": "Disable_RDP.reg",
+      "MinVersion": null,
+      "MaxVersion": null
+    },
+    {
+      "FeatureId": "DisableAppNotifications",
+      "Label": "Silence notifications from Outlook, Edge, Brave & Chrome",
+      "ToolTip": "Disables toast/pop-up notifications from Outlook (new and classic, including desktop alerts and the new-mail sound) and blocks websites from showing notification prompts in Edge, Brave and Google Chrome.",
+      "Category": "Custom Setup",
+      "RegistryKey": "Disable_App_Notifications.reg",
+      "ApplyText": "Silencing Outlook and browser notifications",
+      "UndoLabel": "Restore Outlook & browser notifications",
+      "ApplyUndoText": "Restoring Outlook and browser notification defaults",
+      "RegistryUndoKey": "Enable_App_Notifications.reg",
+      "MinVersion": null,
+      "MaxVersion": null
+    },
+    {
+      "FeatureId": "SetEdgePolicies",
+      "Label": "Set up Edge: no setup nags, no tracking, Google homepage",
+      "ToolTip": "Configures Microsoft Edge via policy: skips the first-run setup wizard, disables diagnostic data, tracking, Rewards, shopping assistant and the sidebar, sets google.com as the homepage, startup page and new tab page, and removes the MSN feed from new tabs. Restart Edge to see the changes.",
+      "Category": "Custom Setup",
+      "RegistryKey": "Configure_Edge_Custom.reg",
+      "ApplyText": "Applying Edge policies (no tracking, Google homepage)",
+      "UndoLabel": "Remove custom Edge policies",
+      "ApplyUndoText": "Removing custom Edge policies",
+      "RegistryUndoKey": "Remove_Edge_Custom.reg",
+      "MinVersion": null,
+      "MaxVersion": null
+    },
+    {
+      "FeatureId": "InstallBrave",
+      "Label": "Install the Brave browser",
+      "ToolTip": "Downloads and installs the Brave web browser using winget (the Windows Package Manager). Requires an internet connection. This checkbox is disabled once Brave is installed - uninstall it from Windows Settings if you change your mind.",
+      "Category": "Custom Setup",
+      "RegistryKey": null,
+      "ApplyText": "Installing the Brave browser via winget",
+      "UndoLabel": null,
+      "ApplyUndoText": null,
+      "RegistryUndoKey": null,
+      "DisableWhenApplied": true,
+      "MinVersion": null,
+      "MaxVersion": null
+    },
+    {
+      "FeatureId": "SetBlackDesktop",
+      "Label": "Set a solid black desktop background",
+      "ToolTip": "Removes the wallpaper and sets the desktop background to solid black, applied immediately. This checkbox is disabled once applied - pick a new background in Windows Settings if you change your mind.",
+      "Category": "Custom Setup",
+      "RegistryKey": null,
+      "ApplyText": "Setting solid black desktop background",
+      "UndoLabel": null,
+      "ApplyUndoText": null,
+      "RegistryUndoKey": null,
+      "DisableWhenApplied": true,
+      "MinVersion": null,
       "MaxVersion": null
     }
   ]

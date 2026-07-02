@@ -1,0 +1,122 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Static IP configuration"
+        Width="520"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="False"
+        ShowInTaskbar="False">
+
+    <Border Style="{DynamicResource ModalCardBorderStyle}">
+
+        <Grid Margin="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title Bar -->
+            <Grid Grid.Row="0" x:Name="TitleBar" Style="{DynamicResource ModalTitleBarStyle}">
+                <TextBlock Text="Static IP configuration"
+                           Style="{DynamicResource ModalTitleTextStyle}"/>
+            </Grid>
+
+            <!-- Content -->
+            <StackPanel Grid.Row="1" Margin="20,4,20,16">
+
+                <TextBlock Text="Fields are pre-filled from the adapter's current configuration. Leave gateway or DNS empty to not set them. Careful when connected over RDP: changing the address will drop your session."
+                           FontSize="13"
+                           Foreground="{DynamicResource AppFgColor}"
+                           Opacity="0.8"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,14"/>
+
+                <TextBlock Text="Network adapter"
+                           Style="{DynamicResource ModalInfoLabelTextStyle}"/>
+                <ComboBox x:Name="AdapterCombo"
+                          Margin="0,0,0,12"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- IPv4 address -->
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="IPv4 address"
+                               Style="{DynamicResource ModalInfoLabelTextStyle}"/>
+                    <Border Grid.Row="1" Grid.Column="0" Style="{DynamicResource TextBoxBorderStyle}" Margin="0,0,0,12">
+                        <Border Style="{DynamicResource TextBoxBottomBorderStyle}">
+                            <TextBox x:Name="IpTextBox" Style="{DynamicResource TextBoxInputStyle}"
+                                     AutomationProperties.Name="IPv4 address"/>
+                        </Border>
+                    </Border>
+
+                    <!-- Subnet mask -->
+                    <TextBlock Grid.Row="0" Grid.Column="2"
+                               Text="Subnet mask"
+                               Style="{DynamicResource ModalInfoLabelTextStyle}"/>
+                    <Border Grid.Row="1" Grid.Column="2" Style="{DynamicResource TextBoxBorderStyle}" Margin="0,0,0,12">
+                        <Border Style="{DynamicResource TextBoxBottomBorderStyle}">
+                            <TextBox x:Name="MaskTextBox" Style="{DynamicResource TextBoxInputStyle}"
+                                     AutomationProperties.Name="Subnet mask"/>
+                        </Border>
+                    </Border>
+
+                    <!-- Default gateway -->
+                    <TextBlock Grid.Row="2" Grid.Column="0"
+                               Text="Default gateway"
+                               Style="{DynamicResource ModalInfoLabelTextStyle}"/>
+                    <Border Grid.Row="3" Grid.Column="0" Style="{DynamicResource TextBoxBorderStyle}" Margin="0,0,0,4">
+                        <Border Style="{DynamicResource TextBoxBottomBorderStyle}">
+                            <TextBox x:Name="GatewayTextBox" Style="{DynamicResource TextBoxInputStyle}"
+                                     AutomationProperties.Name="Default gateway"/>
+                        </Border>
+                    </Border>
+
+                    <!-- DNS servers -->
+                    <TextBlock Grid.Row="2" Grid.Column="2"
+                               Text="DNS servers (comma-separated)"
+                               Style="{DynamicResource ModalInfoLabelTextStyle}"/>
+                    <Border Grid.Row="3" Grid.Column="2" Style="{DynamicResource TextBoxBorderStyle}" Margin="0,0,0,4">
+                        <Border Style="{DynamicResource TextBoxBottomBorderStyle}">
+                            <TextBox x:Name="DnsTextBox" Style="{DynamicResource TextBoxInputStyle}"
+                                     AutomationProperties.Name="DNS servers"/>
+                        </Border>
+                    </Border>
+                </Grid>
+
+                <TextBlock x:Name="StatusText"
+                           FontSize="13"
+                           TextWrapping="Wrap"
+                           Margin="0,10,0,0"
+                           Visibility="Collapsed"/>
+            </StackPanel>
+
+            <!-- Button Panel -->
+            <Border Grid.Row="2" Style="{DynamicResource ModalFooterBorderStyle}">
+                <StackPanel Style="{DynamicResource ModalFooterButtonsRightStyle}">
+                    <Button x:Name="ApplyButton"
+                            Content="Apply"
+                            Style="{DynamicResource ModalPrimaryActionButtonStyle}"/>
+                    <Button x:Name="CancelButton"
+                            Content="Cancel"
+                            Style="{DynamicResource ModalSecondaryActionButtonStyle}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</Window>

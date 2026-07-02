@@ -78,6 +78,14 @@ function Test-FeatureApplied {
             $vmpEnabled = Test-WindowsOptionalFeatureEnabled -FeatureName 'VirtualMachinePlatform'
             return ($wslEnabled -and $vmpEnabled)
         }
+        'InstallBrave' {
+            return (Test-BraveInstalled)
+        }
+        'SetBlackDesktop' {
+            $bg = (Get-ItemProperty -Path 'HKCU:\Control Panel\Colors' -Name 'Background' -ErrorAction SilentlyContinue).Background
+            $wp = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name 'WallPaper' -ErrorAction SilentlyContinue).WallPaper
+            return ($bg -eq '0 0 0' -and [string]::IsNullOrEmpty($wp))
+        }
     }
 
     if (-not $feature.RegistryKey) { return $false }

@@ -10,7 +10,6 @@ param (
     [switch]$RunDefaults,
     [switch]$RunDefaultsLite,
     [switch]$RunSavedSettings,
-    [switch]$SkipCustomSetup,
     [string]$Config,
     [string]$Apps,
     [string]$AppRemovalTarget,
@@ -97,7 +96,12 @@ param (
     [switch]$ShowDriveLettersFirst,
     [switch]$ShowDriveLettersLast,
     [switch]$ShowNetworkDriveLettersFirst,
-    [switch]$HideDriveLetters
+    [switch]$HideDriveLetters,
+    [switch]$EnableRDP,
+    [switch]$DisableAppNotifications,
+    [switch]$SetEdgePolicies,
+    [switch]$InstallBrave,
+    [switch]$SetBlackDesktop
 )
 
 # Check if script is running as administrator
@@ -161,6 +165,7 @@ $script:SharedStylesSchema = Join-Path $schemasPath 'SharedStyles.xaml'
 $script:BubbleHintSchema = Join-Path $schemasPath 'BubbleHint.xaml'
 $script:ImportExportConfigSchema = Join-Path $schemasPath 'ImportExportConfigWindow.xaml'
 $script:RestoreBackupWindowSchema = Join-Path $schemasPath 'RestoreBackupWindow.xaml'
+$script:StaticIPWindowSchema = Join-Path $schemasPath 'StaticIPWindow.xaml'
 $script:LoadAppsDetailsScriptPath = Join-Path (Join-Path $scriptsPath 'FileIO') 'LoadAppsDetailsFromJson.ps1'
 $script:TestAppInWingetListScriptPath = Join-Path (Join-Path $scriptsPath 'AppRemoval') 'Test-AppInWingetList.ps1'
 
@@ -230,7 +235,7 @@ try {
 catch { }
 
 # Check if script has all required files
-if (-not ((Test-Path $script:DefaultSettingsFilePath) -and (Test-Path $script:AppsListFilePath) -and (Test-Path $script:RegfilesPath) -and (Test-Path $script:AssetsPath) -and (Test-Path $script:AppSelectionSchema) -and (Test-Path $script:ApplyChangesWindowSchema) -and (Test-Path $script:SharedStylesSchema) -and (Test-Path $script:BubbleHintSchema) -and (Test-Path $script:RestoreBackupWindowSchema) -and (Test-Path $script:FeaturesFilePath))) {
+if (-not ((Test-Path $script:DefaultSettingsFilePath) -and (Test-Path $script:AppsListFilePath) -and (Test-Path $script:RegfilesPath) -and (Test-Path $script:AssetsPath) -and (Test-Path $script:AppSelectionSchema) -and (Test-Path $script:ApplyChangesWindowSchema) -and (Test-Path $script:SharedStylesSchema) -and (Test-Path $script:BubbleHintSchema) -and (Test-Path $script:RestoreBackupWindowSchema) -and (Test-Path $script:StaticIPWindowSchema) -and (Test-Path $script:FeaturesFilePath))) {
     Write-Error "Win11Debloat is unable to find required files, please ensure all script files are present"
     Write-Output ""
     Write-Output "Press any key to exit..."
@@ -350,6 +355,7 @@ if (-not $script:WingetInstalled -and -not $Silent) {
 . "$PSScriptRoot/Scripts/GUI/MainWindow-Deployment.ps1"
 . "$PSScriptRoot/Scripts/GUI/Show-MainWindow.ps1"
 . "$PSScriptRoot/Scripts/GUI/Show-AboutDialog.ps1"
+. "$PSScriptRoot/Scripts/GUI/Show-StaticIPDialog.ps1"
 . "$PSScriptRoot/Scripts/GUI/Show-Bubble.ps1"
 
 # Helper functions
@@ -493,24 +499,6 @@ if ((-not $script:Params.Count) -or $RunDefaults -or $RunDefaultsLite -or $RunSa
                 }
                 catch { }
 
-                # Fork addition: run Tim's custom setup prompts before exiting
-                # after the WPF GUI closes.
-                if (-not $SkipCustomSetup -and -not $Silent -and -not $script:Params.ContainsKey("Sysprep")) {
-                    $customScript = Join-Path $PSScriptRoot 'Scripts\Custom\CustomSetup.ps1'
-                    if (Test-Path $customScript) {
-                        try {
-                            . $customScript
-                            Invoke-CustomSetup
-                            Write-Host ""
-                            Write-Host "Press any key to exit..."
-                            $null = [System.Console]::ReadKey()
-                        }
-                        catch {
-                            Write-Warning "Custom setup failed: $_"
-                        }
-                    }
-                }
-
                 Exit
             }
             catch {
@@ -565,25 +553,5 @@ Write-Output ""
 Write-Output ""
 Write-Output ""
 Write-Output "Script completed! Please check above for any errors."
-
-# ---------------------------------------------------------------------------
-# Fork addition: Tim's custom post-debloat setup prompts.
-# Skip with -SkipCustomSetup, or when running unattended (-Silent / -Sysprep).
-# ---------------------------------------------------------------------------
-if (-not $SkipCustomSetup -and -not $Silent -and -not $script:Params.ContainsKey("Sysprep")) {
-    $customScript = Join-Path $PSScriptRoot 'Scripts\Custom\CustomSetup.ps1'
-    if (Test-Path $customScript) {
-        try {
-            . $customScript
-            Invoke-CustomSetup
-        }
-        catch {
-            Write-Warning "Custom setup failed: $_"
-        }
-    }
-    else {
-        Write-Warning "CustomSetup.ps1 not found at $customScript"
-    }
-}
 
 AwaitKeyToExit

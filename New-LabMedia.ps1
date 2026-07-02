@@ -10,7 +10,7 @@
 #      choose, and auto-logs it in once.
 #    - Bypasses TPM / Secure Boot / RAM / CPU checks (lab use).
 #    - Copies this repo to C:\Win11Debloat on the target and runs
-#      Win11Debloat.ps1 (debloat + CustomSetup prompts) at first logon.
+#      Win11Debloat.ps1 (debloat GUI incl. Custom Setup tweaks) at first logon.
 #
 #  Two ways to use it:
 #
