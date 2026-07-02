@@ -56,7 +56,7 @@ Download & run the script automatically via PowerShell.
 2. Copy and paste the command below into PowerShell:
 
 ```PowerShell
-& ([scriptblock]::Create((irm "https://debloat.raphi.re/")))
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/nievelc/Win11Debloat/main/Bootstrap.ps1")))
 ```
 
 3. Wait for the script to automatically download and launch Win11Debloat.
