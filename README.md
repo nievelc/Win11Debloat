@@ -25,6 +25,32 @@ That fetches this fork, unblocks the scripts, and launches `Win11Debloat.ps1`. T
 
 The extra logic lives in `Scripts/Custom/CustomSetup.ps1` if you want to poke at it.
 
+### Fully unattended install media (lab use)
+
+Want a Windows 11 installer that creates **your** local admin account, skips every OOBE screen (Microsoft account included), and runs the debloater automatically at first logon? `New-LabMedia.ps1` generates the `autounattend.xml` for you — your username and password are typed locally and never leave your machine.
+
+Clone or [download](../../archive/refs/heads/main.zip) this repo, open PowerShell in the repo folder, then pick one:
+
+**USB stick (simplest — physical machines).** Make a normal bootable USB first (Rufus or the Media Creation Tool), then:
+
+```powershell
+.\New-LabMedia.ps1 -UsbDrive E:
+```
+
+Windows Setup automatically reads `autounattend.xml` from the root of the install media, so injecting it is literally a file copy — no ISO surgery needed.
+
+**Rebuilt ISO (VMs).** Point it at a stock Windows 11 ISO ([download from Microsoft](https://www.microsoft.com/software-download/windows11)):
+
+```powershell
+.\New-LabMedia.ps1 -SourceIso C:\ISOs\Win11.iso
+```
+
+It prompts for username/password, extracts the ISO, injects the answer file plus the debloater (bundled to `C:\Win11Debloat` on the target), and rebuilds a bootable ISO next to the source. No Windows ADK, no admin rights. The rebuilt ISO is UEFI-boot only — use Gen2/EFI VMs.
+
+**What to expect when you boot it:** the only question Setup asks is *which disk to install to* (deliberately kept manual so the media can never silently wipe a machine). After that it installs, auto-logs into your new admin account once, and launches the debloater + setup prompts.
+
+**Lab-use notes:** the answer file bypasses the TPM/Secure Boot/RAM/CPU checks and uses Microsoft's public *generic* Pro key, which selects the edition but does **not** activate Windows — bring your own licence. The password is stored base64-encoded (not encrypted) in the generated `autounattend.xml`, so treat the media as containing the password, and don't commit the generated file anywhere public.
+
 ---
 
 **Upstream credit:** all of the heavy lifting — the debloat itself, the CLI/GUI, the config system, the wiki — is [Raphire's](https://github.com/Raphire/Win11Debloat). If this saved you time, [buy him a coffee](https://ko-fi.com/M4M5C6UPC).
