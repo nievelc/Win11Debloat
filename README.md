@@ -1,13 +1,31 @@
-# Win11Debloat (Tim's fork)
+# Win11Debloat + Setup
 
-> **Fork note:** This fork of [Raphire/Win11Debloat](https://github.com/Raphire/Win11Debloat) adds an interactive post-debloat setup step. After the base debloat completes, the script prompts for four extra items:
->
-> 1. **Static IPv4 configuration** — pick an adapter, then enter IP, subnet mask, default gateway, and DNS servers. Defaults are pulled from the current config; type `skip` at any point (or `S` at the adapter selection) to keep the existing network config.
-> 2. **Enable / disable RDP** — toggles `fDenyTSConnections` and the "Remote Desktop" firewall rule group.
-> 3. **Suppress toast / pop-up notifications** in Outlook (new + classic), Microsoft Edge, Brave, and Google Chrome — per-app Windows toast keys plus `DefaultNotificationsSetting=2` policy for the Chromium browsers, plus Outlook `NewmailDesktopAlerts` / `PlaySound` off.
-> 4. **Solid black desktop background** — clears the wallpaper and sets `Control Panel\Colors\Background = "0 0 0"`, applied immediately via `SystemParametersInfo` + `SetSysColors`.
->
-> The extra step lives in `Scripts/Custom/CustomSetup.ps1` and runs at the end of `Win11Debloat.ps1`. Pass `-SkipCustomSetup` (or run with `-Silent` / `-Sysprep`) to skip it.
+A fork of [Raphire/Win11Debloat](https://github.com/Raphire/Win11Debloat) that turns a fresh Windows 11 install into a working machine in one pass. You get everything the original does — pre-installed junk removed, telemetry cut down, the UI stripped of the noisy bits — and then a short interactive setup that finishes the job the way most people actually want it configured.
+
+**What this fork adds on top:**
+
+- **Static IP configuration** — pick an adapter, punch in the IP / subnet mask / gateway / DNS. Defaults come from your current config, and you can skip any prompt to leave the network untouched.
+- **Remote Desktop toggle** — one Y/N to enable RDP and open the firewall, or lock it back down.
+- **Notification silence** — kills the toast/pop-up spam from Outlook (new *and* classic), Edge, Brave, and Chrome, so you don't spend your first day dismissing bubbles.
+- **Black desktop** — clears the wallpaper and sets a solid black background, applied instantly.
+
+Everything is optional and prompted, so nothing changes without your say-so.
+
+### One-line install
+
+Open PowerShell **as Administrator** on the fresh machine and paste:
+
+```powershell
+& ([scriptblock]::Create((irm "https://raw.githubusercontent.com/nievelc/Win11Debloat/main/Bootstrap.ps1")))
+```
+
+That fetches this fork, unblocks the scripts, and launches `Win11Debloat.ps1`. The base debloater runs first; the extra setup prompts run at the end. Pass `-SkipCustomSetup` to skip the extras, or `-Silent` / `-Sysprep` to run unattended.
+
+The extra logic lives in `Scripts/Custom/CustomSetup.ps1` if you want to poke at it.
+
+---
+
+**Upstream credit:** all of the heavy lifting — the debloat itself, the CLI/GUI, the config system, the wiki — is [Raphire's](https://github.com/Raphire/Win11Debloat). If this saved you time, [buy him a coffee](https://ko-fi.com/M4M5C6UPC).
 
 ---
 
