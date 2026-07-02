@@ -114,7 +114,9 @@ $firstLogonXml = if ($NoDebloat) { '' } else { @"
                 <SynchronousCommand wcm:action="add">
                     <Order>1</Order>
                     <Description>Win11Debloat post-install setup</Description>
-                    <CommandLine>powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Win11Debloat\Win11Debloat.ps1</CommandLine>
+                    <!-- cmd /k keeps the window open if anything fails, so errors
+                         are readable instead of the window flashing and closing -->
+                    <CommandLine>cmd.exe /k "if exist C:\Win11Debloat\Win11Debloat.ps1 (powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Win11Debloat\Win11Debloat.ps1) else (echo ERROR: debloater payload missing - Setup did not copy C:\Win11Debloat from the install media OEM folder)"</CommandLine>
                 </SynchronousCommand>
             </FirstLogonCommands>
 "@ }
@@ -262,30 +264,49 @@ if (-not (Test-Path "$work\efi\microsoft\boot\efisys.bin")) {
 }
 
 Write-Host "Rebuilding bootable ISO (UEFI)..."
-Add-Type -CompilerParameters (New-Object CodeDom.Compiler.CompilerParameters -Property @{ CompilerOptions = '/unsafe' }) -TypeDefinition @'
-using System;
-using System.IO;
-using System.Runtime.InteropServices.ComTypes;
-public class ISOWriter {
-    public unsafe static void Create(string path, object stream, int blockSize, int totalBlocks) {
-        int bytesRead = 0;
-        byte[] buf = new byte[blockSize * 2048];
-        IntPtr ptr = (IntPtr)(&bytesRead);
-        IStream istream = stream as IStream;
-        using (FileStream fs = File.OpenWrite(path)) {
-            long remaining = (long)totalBlocks * blockSize;
-            while (remaining > 0) {
-                int toRead = (int)Math.Min((long)buf.Length, remaining);
-                istream.Read(buf, toRead, ptr);
-                if (bytesRead <= 0) { break; }
-                fs.Write(buf, 0, bytesRead);
-                remaining -= bytesRead;
-            }
-            fs.Flush();
+
+# Writes the IMAPI result stream to disk in pure PowerShell (no Add-Type):
+# dynamically compiled helper DLLs get blocked by Smart App Control / WDAC on
+# some machines, so we QueryInterface the COM stream for IStream and drive it
+# via reflection instead.
+function Write-IsoStream {
+    param($ResultImage, [string]$Path)
+
+    $iunk = [Runtime.InteropServices.Marshal]::GetIUnknownForObject($ResultImage.ImageStream)
+    $iid  = [Guid]'0000000C-0000-0000-C000-000000000046'  # IID_IStream
+    $ptr  = [IntPtr]::Zero
+    $hr   = [Runtime.InteropServices.Marshal]::QueryInterface($iunk, [ref]$iid, [ref]$ptr)
+    if ($hr -ne 0) { throw "QueryInterface(IStream) failed with HRESULT $hr" }
+    $istream    = [Runtime.InteropServices.Marshal]::GetTypedObjectForIUnknown($ptr, [System.Runtime.InteropServices.ComTypes.IStream])
+    $readMethod = [System.Runtime.InteropServices.ComTypes.IStream].GetMethod('Read')
+
+    $buf = New-Object byte[] (4MB)
+    $pcb = [Runtime.InteropServices.Marshal]::AllocHGlobal(8)
+    # Reflection args must hold raw objects: PSObject-wrapped values fail to
+    # convert to byte[] inside MethodInfo.Invoke
+    $invokeArgs = New-Object object[] 3
+    $invokeArgs[0] = $buf.psobject.BaseObject
+    $invokeArgs[2] = $pcb
+
+    $out = [IO.File]::OpenWrite($Path)
+    try {
+        $remaining = [long]$ResultImage.TotalBlocks * $ResultImage.BlockSize
+        while ($remaining -gt 0) {
+            $invokeArgs[1] = [int][Math]::Min([long]$buf.Length, $remaining)
+            $null = $readMethod.Invoke($istream, $invokeArgs)
+            $read = [Runtime.InteropServices.Marshal]::ReadInt32($pcb)
+            if ($read -le 0) { throw "IStream.Read returned $read with $remaining bytes remaining" }
+            $out.Write($buf, 0, $read)
+            $remaining -= $read
         }
     }
+    finally {
+        $out.Close()
+        [Runtime.InteropServices.Marshal]::FreeHGlobal($pcb)
+        [Runtime.InteropServices.Marshal]::Release($ptr)  | Out-Null
+        [Runtime.InteropServices.Marshal]::Release($iunk) | Out-Null
+    }
 }
-'@
 
 $bootStream = New-Object -ComObject ADODB.Stream
 $bootStream.Open()
@@ -305,12 +326,23 @@ $fsi.Root.AddTree($work, $false)
 
 if (Test-Path $OutputIso) { Remove-Item $OutputIso -Force }
 $img = $fsi.CreateResultImage()
-[ISOWriter]::Create($OutputIso, $img.ImageStream, $img.BlockSize, $img.TotalBlocks)
-
-Remove-Item $work -Recurse -Force
+Write-IsoStream -ResultImage $img -Path $OutputIso
 
 Write-Host ""
 Write-Host ("Done: {0} ({1:N2} GB)" -f $OutputIso, ((Get-Item $OutputIso).Length / 1GB)) -ForegroundColor Green
+
+# IMAPI holds handles on the staged files until the COM objects are released,
+# so drop them before cleanup - and never let cleanup failure mask a good build
+foreach ($com in @($img, $fsi, $boot, $bootStream)) {
+    $null = [Runtime.InteropServices.Marshal]::ReleaseComObject($com)
+}
+[GC]::Collect(); [GC]::WaitForPendingFinalizers()
+try {
+    Remove-Item $work -Recurse -Force
+}
+catch {
+    Write-Warning "Could not fully remove temp folder $work - delete it manually to reclaim disk space."
+}
 Write-Host "Account: $UserName (admin, auto-logs in once). Disk selection stays manual." -ForegroundColor Green
 Write-Host "Note: the ISO boots UEFI only - use Gen2/EFI VMs or modern hardware." -ForegroundColor DarkGray
 exit 0
