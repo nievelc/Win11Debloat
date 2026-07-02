@@ -9,7 +9,11 @@
 #    2. Enable / disable Remote Desktop (RDP).
 #    3. Suppress toast / pop-up notifications in Outlook (new + classic),
 #       Microsoft Edge, Brave and Google Chrome.
-#    4. Set the desktop background to solid black.
+#    4. Microsoft Edge policies: skip the first-run setup wizard, disable
+#       telemetry / tracking out of the box, set google.com as the homepage
+#       and new tab page (no MSN feed).
+#    5. Install the Brave browser via winget.
+#    6. Set the desktop background to solid black.
 #
 #  Each step is independent and wrapped in try/catch so one failure does not
 #  abort the whole flow. Call `Invoke-CustomSetup` from Win11Debloat.ps1.
@@ -298,7 +302,109 @@ function Disable-CustomNotifications {
 }
 
 # ---------------------------------------------------------------------------
-# 4. Solid black desktop background
+# 4. Microsoft Edge: no first-run wizard, no tracking, Google homepage/new tab
+# ---------------------------------------------------------------------------
+function Set-CustomEdgePolicies {
+    Write-Section "Microsoft Edge (first-run wizard, tracking, homepage)"
+
+    if (-not (Read-YesNo -Prompt "Configure Edge (skip setup wizard, no tracking, google.com homepage + new tab)?" -Default 'Y')) {
+        Write-Host "Skipped Edge configuration." -ForegroundColor Yellow
+        return
+    }
+
+    $edge = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge'
+    try {
+        if (-not (Test-Path $edge)) { New-Item -Path $edge -Force | Out-Null }
+
+        $dwordPolicies = @{
+            # --- First-run experience / nag screens ---
+            'HideFirstRunExperience'           = 1  # no welcome / sign-in / sync wizard
+            'DefaultBrowserSettingEnabled'     = 0  # stop "make Edge your default" nags
+            'ShowRecommendationsEnabled'       = 0  # in-browser feature recommendations
+            'SpotlightExperiencesAndRecommendationsEnabled' = 0
+
+            # --- Tracking / telemetry off out of the box ---
+            'DiagnosticData'                   = 0  # send no required/optional diagnostic data
+            'PersonalizationReportingEnabled'  = 0  # no ads based on browsing history
+            'UserFeedbackAllowed'              = 0
+            'SearchSuggestEnabled'             = 0  # don't stream keystrokes to the search provider
+            'ConfigureDoNotTrack'              = 1
+            'TrackingPrevention'               = 3  # strict anti-tracking
+            'AlternateErrorPagesEnabled'       = 0
+            'EdgeShoppingAssistantEnabled'     = 0
+            'ShowMicrosoftRewards'             = 0
+            'WebWidgetAllowed'                 = 0
+            'HubsSidebarEnabled'               = 0  # sidebar / Copilot rail
+
+            # --- Homepage & startup ---
+            'HomepageIsNewTabPage'             = 0
+            'ShowHomeButton'                   = 1
+            'RestoreOnStartup'                 = 4  # open the RestoreOnStartupURLs list
+
+            # --- New tab page: no MSN feed / sponsored tiles ---
+            'NewTabPageContentEnabled'         = 0  # kills the news feed
+            'NewTabPageQuickLinksEnabled'      = 0
+            'NewTabPageHideDefaultTopSites'    = 1
+            'NewTabPageAllowedBackgroundTypes' = 3
+        }
+        foreach ($name in $dwordPolicies.Keys) {
+            Set-ItemProperty -Path $edge -Name $name -Value $dwordPolicies[$name] -Type DWord -Force
+        }
+
+        Set-ItemProperty -Path $edge -Name 'HomepageLocation'  -Value 'https://www.google.com' -Type String -Force
+        Set-ItemProperty -Path $edge -Name 'NewTabPageLocation' -Value 'https://www.google.com' -Type String -Force
+
+        $startupUrls = Join-Path $edge 'RestoreOnStartupURLs'
+        if (-not (Test-Path $startupUrls)) { New-Item -Path $startupUrls -Force | Out-Null }
+        Set-ItemProperty -Path $startupUrls -Name '1' -Value 'https://www.google.com' -Type String -Force
+
+        Write-Host "Edge policies applied. Restart Edge for them to take effect." -ForegroundColor Green
+    }
+    catch {
+        Write-Warning "Failed to apply Edge policies: $_"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 5. Install Brave browser via winget
+# ---------------------------------------------------------------------------
+function Install-CustomBrave {
+    Write-Section "Brave browser"
+
+    if (-not (Read-YesNo -Prompt "Download and install the Brave browser (via winget)?" -Default 'Y')) {
+        Write-Host "Skipped Brave install." -ForegroundColor Yellow
+        return
+    }
+
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        Write-Warning "winget is not available on this system. Install 'App Installer' from the Microsoft Store, then run: winget install --id Brave.Brave"
+        return
+    }
+
+    try {
+        $existing = winget list --id Brave.Brave --exact --accept-source-agreements | Out-String
+        if ($LASTEXITCODE -eq 0 -and $existing -match 'Brave\.Brave') {
+            Write-Host "Brave is already installed. Skipping." -ForegroundColor Green
+            return
+        }
+
+        Write-Host "Installing Brave (this can take a minute)..." -ForegroundColor Cyan
+        winget install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Brave installed successfully." -ForegroundColor Green
+        }
+        else {
+            Write-Warning "winget exited with code $LASTEXITCODE - Brave may not have installed correctly."
+        }
+    }
+    catch {
+        Write-Warning "Failed to install Brave: $_"
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 6. Solid black desktop background
 # ---------------------------------------------------------------------------
 function Set-CustomBlackDesktop {
     Write-Section "Black desktop background"
@@ -351,7 +457,7 @@ function Invoke-CustomSetup {
     Write-Host "#  Custom post-debloat setup (Tim's fork additions)" -ForegroundColor Magenta
     Write-Host ("#" * 70) -ForegroundColor Magenta
 
-    if (-not (Read-YesNo -Prompt "Run the extra setup prompts (static IP / RDP / notifications / desktop)?" -Default 'Y')) {
+    if (-not (Read-YesNo -Prompt "Run the extra setup prompts (static IP / RDP / notifications / Edge / Brave / desktop)?" -Default 'Y')) {
         Write-Host "Skipping custom setup." -ForegroundColor Yellow
         return
     }
@@ -359,6 +465,8 @@ function Invoke-CustomSetup {
     Set-CustomStaticIP
     Set-CustomRDP
     Disable-CustomNotifications
+    Set-CustomEdgePolicies
+    Install-CustomBrave
     Set-CustomBlackDesktop
 
     Write-Host ""

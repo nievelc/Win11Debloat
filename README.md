@@ -7,6 +7,8 @@ A fork of [Raphire/Win11Debloat](https://github.com/Raphire/Win11Debloat) that t
 - **Static IP configuration** — pick an adapter, punch in the IP / subnet mask / gateway / DNS. Defaults come from your current config, and you can skip any prompt to leave the network untouched.
 - **Remote Desktop toggle** — one Y/N to enable RDP and open the firewall, or lock it back down.
 - **Notification silence** — kills the toast/pop-up spam from Outlook (new *and* classic), Edge, Brave, and Chrome, so you don't spend your first day dismissing bubbles.
+- **Edge, tamed** — skips the first-run setup wizard, turns off diagnostic data and tracking out of the box, sets google.com as the homepage and new tab page, and kills the MSN feed, Rewards, shopping assistant, and sidebar.
+- **Brave install** — one Y/N to pull down the Brave browser via winget.
 - **Black desktop** — clears the wallpaper and sets a solid black background, applied instantly.
 
 Everything is optional and prompted, so nothing changes without your say-so.

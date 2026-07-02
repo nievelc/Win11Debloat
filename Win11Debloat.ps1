@@ -487,11 +487,29 @@ if ((-not $script:Params.Count) -or $RunDefaults -or $RunDefaultsLite -or $RunSa
         else {
             try {
                 $result = Show-MainWindow
-            
+
                 try {
                     Stop-Transcript
                 }
                 catch { }
+
+                # Fork addition: run Tim's custom setup prompts before exiting
+                # after the WPF GUI closes.
+                if (-not $SkipCustomSetup -and -not $Silent -and -not $script:Params.ContainsKey("Sysprep")) {
+                    $customScript = Join-Path $PSScriptRoot 'Scripts\Custom\CustomSetup.ps1'
+                    if (Test-Path $customScript) {
+                        try {
+                            . $customScript
+                            Invoke-CustomSetup
+                            Write-Host ""
+                            Write-Host "Press any key to exit..."
+                            $null = [System.Console]::ReadKey()
+                        }
+                        catch {
+                            Write-Warning "Custom setup failed: $_"
+                        }
+                    }
+                }
 
                 Exit
             }
