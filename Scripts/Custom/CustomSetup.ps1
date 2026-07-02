@@ -83,8 +83,10 @@ function Set-CustomStaticIP {
     Write-Section "Static IP configuration"
 
     try {
-        $adapters = Get-NetAdapter -Physical | Where-Object Status -eq 'Up' |
-            Sort-Object -Property ifIndex
+        # @() matters: a single adapter comes back as a bare CimInstance whose
+        # .Count is $null, which breaks the listing loop and index validation
+        $adapters = @(Get-NetAdapter -Physical | Where-Object Status -eq 'Up' |
+            Sort-Object -Property ifIndex)
     }
     catch {
         Write-Warning "Unable to enumerate network adapters: $_"
