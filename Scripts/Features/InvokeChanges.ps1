@@ -164,9 +164,25 @@ function Invoke-FeatureApply {
                 return
             }
 
-            & $wingetExe install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements | Out-Host
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "winget exited with code $LASTEXITCODE - Brave may not have installed correctly" -ForegroundColor Yellow
+            # Run winget in a background runspace via Invoke-NonBlocking: the
+            # download + install takes minutes and would freeze the GUI thread
+            $installResult = Invoke-NonBlocking -ScriptBlock {
+                param($wingetExePath)
+                try {
+                    $global:LASTEXITCODE = 0
+                    $output = & $wingetExePath install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements 2>&1
+                    return @{ ExitCode = $LASTEXITCODE; Output = @($output | ForEach-Object { $_.ToString() }) }
+                }
+                catch {
+                    return @{ ExitCode = 1; Output = @($_.Exception.Message) }
+                }
+            } -ArgumentList $wingetExe
+
+            foreach ($line in @($installResult.Output)) {
+                if ($line -and $line.Trim()) { Write-Host $line }
+            }
+            if ($installResult.ExitCode -ne 0) {
+                Write-Host "winget exited with code $($installResult.ExitCode) - Brave may not have installed correctly" -ForegroundColor Yellow
             }
             Write-Host ""
             return
