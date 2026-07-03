@@ -263,23 +263,24 @@ catch {
     Exit
 }
 
-# Check if WinGet is installed & if it is, check if the version is at least v1.4
+# Check if WinGet is available. On a fresh install the PATH alias may not be
+# registered yet, so Resolve-WingetPath also looks under the App Installer
+# package folder. $script:WingetPath holds the resolved exe for callers to use.
+. "$PSScriptRoot/Scripts/Helpers/ResolveWinget.ps1"
 try {
-    if (Get-Command winget -ErrorAction SilentlyContinue) {
-        $script:WingetInstalled = $true
-    }
-    else {
-        $script:WingetInstalled = $false
-    }
+    $script:WingetPath = Resolve-WingetPath
+    $script:WingetInstalled = [bool]$script:WingetPath
 }
 catch {
     Write-Error "Unable to determine if WinGet is installed, winget command failed: $_"
     $script:WingetInstalled = $false
+    $script:WingetPath = $null
 }
 
 # Show WinGet warning that requires user confirmation, Suppress confirmation if Silent parameter was passed
 if (-not $script:WingetInstalled -and -not $Silent) {
     Write-Warning "WinGet is not installed or outdated, this may prevent Win11Debloat from removing certain apps"
+    Write-Output "On a freshly installed Windows this is often temporary: App Installer finishes provisioning a few minutes after first sign-in. If app removal doesn't work, close this and run Win11Debloat again shortly."
     Write-Output ""
     Write-Output "Press any key to continue anyway..."
     $null = [System.Console]::ReadKey()

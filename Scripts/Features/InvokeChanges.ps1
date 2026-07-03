@@ -149,8 +149,11 @@ function Invoke-FeatureApply {
                 return
             }
 
-            if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-                Write-Host "winget is not available on this system, unable to install Brave. Install 'App Installer' from the Microsoft Store and try again." -ForegroundColor Yellow
+            $wingetExe = if ($script:WingetPath) { $script:WingetPath }
+                         elseif (Get-Command Resolve-WingetPath -ErrorAction SilentlyContinue) { Resolve-WingetPath }
+                         else { $null }
+            if (-not $wingetExe) {
+                Write-Host "winget is not available yet, unable to install Brave. On a fresh install, wait a few minutes for App Installer to finish provisioning and re-run, or install 'App Installer' from the Microsoft Store." -ForegroundColor Yellow
                 Write-Host ""
                 return
             }
@@ -161,7 +164,7 @@ function Invoke-FeatureApply {
                 return
             }
 
-            & winget install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements | Out-Host
+            & $wingetExe install --id Brave.Brave --exact --silent --accept-source-agreements --accept-package-agreements | Out-Host
             if ($LASTEXITCODE -ne 0) {
                 Write-Host "winget exited with code $LASTEXITCODE - Brave may not have installed correctly" -ForegroundColor Yellow
             }
