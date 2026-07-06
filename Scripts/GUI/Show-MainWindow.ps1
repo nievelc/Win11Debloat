@@ -792,6 +792,28 @@
             Update-UserSelectionDescription -Window $window -UserSelectionCombo $userSelectionCombo -OtherUsernameTextBox $otherUsernameTextBox -UserSelectionDescription $userSelectionDescription
             Update-AppliedTweaksUserModeState -ShowCurrentlyAppliedTweaksCheckBox $ShowCurrentlyAppliedTweaksCheckBox -UserSelectionCombo $userSelectionCombo
             Invoke-NavigationUpdate
+
+            # Fork addition: lab first-logon flow (-PreselectCustomSetup, set by
+            # the unattended install media). Pre-tick every Custom Setup tweak so
+            # the lab defaults are one Apply away, and open the static IP dialog
+            # up front so networking is asked about rather than discoverable.
+            if ($script:Params.ContainsKey("PreselectCustomSetup")) {
+                foreach ($controlName in @($script:UiControlMappings.Keys)) {
+                    $mapping = $script:UiControlMappings[$controlName]
+                    if ($mapping.Category -ne 'Custom Setup') { continue }
+                    $control = $window.FindName($controlName)
+                    if ($control -is [System.Windows.Controls.CheckBox] -and $control.IsEnabled -and $control.IsChecked -ne $true) {
+                        $control.IsChecked = $true
+                    }
+                }
+                Update-TweakPresetStates -Window $window
+
+                # Offer the static IP dialog once the window has rendered; Cancel
+                # / Escape leaves the network untouched
+                $window.Dispatcher.BeginInvoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [action]{
+                    Show-StaticIPDialog
+                }) | Out-Null
+            }
         }
         catch {
             Write-Warning "Error during GUI initialization: $($_.Exception.Message)"

@@ -116,7 +116,7 @@ $firstLogonXml = if ($NoDebloat) { '' } else { @"
                     <Description>Win11Debloat post-install setup</Description>
                     <!-- cmd /k keeps the window open if anything fails, so errors
                          are readable instead of the window flashing and closing -->
-                    <CommandLine>cmd.exe /k "if exist C:\Win11Debloat\Win11Debloat.ps1 (powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Win11Debloat\Win11Debloat.ps1) else (echo ERROR: debloater payload missing - Setup did not copy C:\Win11Debloat from the install media OEM folder)"</CommandLine>
+                    <CommandLine>cmd.exe /k "if exist C:\Win11Debloat\Win11Debloat.ps1 (powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\Win11Debloat\Win11Debloat.ps1 -PreselectCustomSetup) else (echo ERROR: debloater payload missing - Setup did not copy C:\Win11Debloat from the install media OEM folder)"</CommandLine>
                 </SynchronousCommand>
             </FirstLogonCommands>
 "@ }
