@@ -1630,8 +1630,8 @@
     },
     {
       "FeatureId": "SetEdgePolicies",
-      "Label": "Set up Edge: no setup nags, no tracking, Google homepage",
-      "ToolTip": "Configures Microsoft Edge via policy: skips the first-run setup wizard, disables diagnostic data, tracking, Rewards, shopping assistant and the sidebar, sets google.com as the homepage, startup page and new tab page, and removes the MSN feed from new tabs. Restart Edge to see the changes.",
+      "Label": "Set up Edge: no prompts at all, no tracking, Google homepage",
+      "ToolTip": "Configures Microsoft Edge via policy so it opens straight to the page with zero prompts: no first-run wizard, no sign-in or sync questions, no import step, no promo tabs, no crash-restore bar, no default-browser nags. Also disables diagnostic data, tracking, Rewards, shopping assistant and the sidebar, sets google.com as the homepage, startup page and new tab page, and removes the MSN feed. Restart Edge to see the changes.",
       "Category": "Custom Setup",
       "RegistryKey": "Configure_Edge_Custom.reg",
       "ApplyText": "Applying Edge policies (no tracking, Google homepage)",
